@@ -1,0 +1,6 @@
+[submodule "fastText"]
+	path = fastText
+	url = git@github.com:facebookresearch/fastText.git
+[submodule "mimic3-benchmarks"]
+	path = mimic3-benchmarks
+	url = git@github.com:oguzserbetci/mimic3-benchmarks.git
