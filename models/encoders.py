@@ -163,7 +163,7 @@ class PatientPoolEncoder(nn.Module):
                 param.requires_grad = False
 
         self.include_demfc = include_demfc
-        self.out_size = 3 * input_size + dem_size
+        self.out_size = 3 * input_size + dem_size + 2
         self.padaware = pat_padaware
         self.tables = tables
 
@@ -194,7 +194,7 @@ class PatientPoolEncoder(nn.Module):
 
             p_max = p_max.transpose(1, 2).contiguous()  # N, L, C
             if self.padaware:
-                p_avg = nonzero_avg_pool1d(inp, L, 1).transpose(1, 2).contiguous()  # N, C, L
+                p_avg = nonzero_avg_pool1d(inp, L, 1).transpose(1, 2).contiguous()  # N, L, C
             else:
                 p_avg = F.avg_pool1d(inp, L, 1).transpose(1, 2).contiguous()  # N, L, C
             p_sum = norm_sum_pool1d(inp, L, 1).transpose(1, 2).contiguous()  # N, L, C
@@ -205,7 +205,11 @@ class PatientPoolEncoder(nn.Module):
         if self.include_demfc:
             dem = self.dem_fc(dem)
         dem = dem.unsqueeze(1).expand(N, L, -1)  # N, L, C
-        patient_timesteps = torch.cat(patient + [dem], 2)  # N, L, C'
+
+        timestep = torch.arange(L, dtype=torch.float).to(dem.device).unsqueeze(1).unsqueeze(0).expand(N, -1, -1)  # N, L, C
+        time_input = [torch.log(timestep + 1), torch.exp(timestep/1000) - 1]
+
+        patient_timesteps = torch.cat(patient + [dem] + time_input, 2)  # N, L, C'
 
         return patient_timesteps, {'time_inds': time_inds,
                                    'activations': activations}
