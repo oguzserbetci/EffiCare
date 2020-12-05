@@ -67,9 +67,9 @@ def parse_arguments():
 
     # Input / Embeddings
     parser.add_argument('--min_word_count', default=10, type=int)
-    parser.add_argument('--padaware', default=False,
+    parser.add_argument('--padaware', default=True,
                         type=eval, choices=[True, False])
-    parser.add_argument('--pat_padaware', default=False,
+    parser.add_argument('--pat_padaware', default=True,
                         type=eval, choices=[True, False])
 
     parser.add_argument('--rand_emb', default=False,
@@ -83,7 +83,7 @@ def parse_arguments():
     parser.add_argument('--emb_suffix', default='.Fasttext.15ws',
                         help="globbing loads the latest (mtime) embedding file that matches.")
     parser.add_argument('--suffix', default='.mimic3')
-    parser.add_argument('--n_bins', default=9, type=int)
+    parser.add_argument('--n_bins', default=12, type=int)
 
     parser.add_argument('--include_time', default=True,
                         type=eval, choices=[True, False])

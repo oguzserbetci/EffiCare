@@ -2,7 +2,6 @@ import torch
 from torch import Tensor
 from torch import nn
 import torch.nn.functional as F
-from utils import load_class
 
 
 def nonzero_avg_pool1d(x, kernel_size, stride=1):
@@ -13,11 +12,15 @@ def nonzero_avg_pool1d(x, kernel_size, stride=1):
 
 
 def nonzero_avg_pool(x, inp):
-    mask = (inp.detach()[:, :, :100] == 0).all(2)
-    x = x * mask[:, None]
-    div = (inp.size(1) - mask.sum(dim=1, keepdim=True)).float()
-    mask = (div.detach() != 0)
-    x = (x.sum(dim=-1) * mask) / (div + 1e-5)
+    '''
+    0-Padding aware average pooling
+    Input:
+    x: [T, C, E]
+    inp: [T, E, C]
+    Output: [T, C, 1]
+    '''
+    div = (inp.detach()[:, :, :100] != 0).all(2).sum(dim=1, keepdim=True).float().detach()
+    x = x.sum(dim=-1) / (div + 1e-5)
     return x[:, :, None]
 
 
@@ -139,8 +142,8 @@ class LinearMaxMeanSumPool(nn.Module):
         input = self.input_dropout(input)  # T, L, C
         out = F.relu(self.linear(input))  # T, L, C
         if self.padaware:
-            mask = (input[:, :, :100].detach() != 0).all(2).byte()
-            out = (out * mask[:, :, None])
+            mask = (input[:, :, :100].detach() == 0).all(2)[:, :, None]
+            out = out.masked_fill_(mask, 0)
         out = out.transpose(1, 2).contiguous()  # T, C, L
         o_max, max_ind = F.max_pool1d(out, out.size(-1), return_indices=True)
         o_max = o_max.squeeze(-1)
@@ -172,8 +175,8 @@ class DeepMaxMeanSumPool(nn.Module):
         input = self.input_dropout(input)
         out = F.relu(self.linear(input))
         if self.padaware:
-            mask = (input[:, :,:100].detach() != 0).all(2).byte()
-            out = (out * mask[:, :, None])
+            mask = (input[:, :, :100].detach() == 0).all(2)[:, :, None]
+            out = out.masked_fill_(mask, 0)
         out = out.transpose(1, 2)
         o_max, max_ind = F.max_pool1d(out, out.size(-1), return_indices=True)
         o_max = o_max.squeeze(-1)
