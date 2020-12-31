@@ -32,7 +32,7 @@ def collect(wandb_id, model: torch.nn.Module, device,
             tables: List[TabularFeature], labels: Dict[str, Label],
             tboardwriter=None,
             **params):
-    model_path = Path(glob(f'wandb/*{wandb_id}/best*.pt')[-1])
+    model_path = Path(glob(f'wandb/*{wandb_id}/**/best*.pt')[-1])
     model_epoch = model_path.name.split('_')[2]
     save_dir = str(Path(model_path).parent)
 

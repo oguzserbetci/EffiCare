@@ -340,7 +340,7 @@ def prepare_batch(batch, device=None):
 def load_model(params, joint_vocab, tables, device):
     model = load_class(params['modelcls'])(joint_vocab, tables, **params).to(device)
 
-    epoch_paths = glob(f'wandb/run-*{params["wandb_id"]}/best_checkpoint*.pth')
+    epoch_paths = glob(f'wandb/*{params["wandb_id"]}/**/best_checkpoint*.pth')
     latest_epoch_path = sorted(epoch_paths)[-1]
     logging.info('LOAD LATEST BEST MODEL', latest_epoch_path)
     params['model_path'] = latest_epoch_path
@@ -350,7 +350,7 @@ def load_model(params, joint_vocab, tables, device):
 
 
 def load_config(wandb_id):
-    config_filepath = glob(f'wandb/run*{wandb_id}/config.yaml')
+    config_filepath = glob(f'wandb/*{wandb_id}/**/config.yaml')
     # Load earliest config to make sure we don't load a modified version.
     file_path = sorted(config_filepath)[0]
     logging.info(f'LOAD EARLIEST CONFIG AT {file_path}')
@@ -370,7 +370,7 @@ def load_config(wandb_id):
 
 
 def load_latest_checkpoint(glob_str, wandb_id):
-    model_paths = glob(f'wandb/run*-{wandb_id}/{glob_str}')
+    model_paths = glob(f'wandb/*{wandb_id}/**/{glob_str}')
     latest_model_path = sorted(model_paths)[-1]
     logging.info(f'LOAD LATEST CHECKPOINT AT {latest_model_path}')
 

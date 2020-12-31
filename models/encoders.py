@@ -146,10 +146,10 @@ class DeepTimestepEncoder(nn.Module):
 
 
 class PatientPoolEncoder(nn.Module):
-    def __init__(self, input_size, tables, pat_padaware=False, timestep_modelcls='models.LinearMaxMeanSumPool', include_demfc=True, dem_size=8, dem_dropout=.0, visit_dropout=.0, freeze_encoders=False, **otherkw):
+    def __init__(self, input_size, tables, pat_padaware=False, timestep_modelcls='models.LinearMaxMeanSumPool', include_demfc=True, include_dem=True, dem_size=8, dem_dropout=.0, visit_dropout=.0, freeze_encoders=False, **otherkw):
         super().__init__()
 
-        if include_demfc:
+        if include_dem and include_demfc:
             self.dem_fc = nn.Sequential(nn.Linear(dem_size, 40),
                                         nn.ReLU(),
                                         nn.Dropout(dem_dropout),
@@ -157,11 +157,17 @@ class PatientPoolEncoder(nn.Module):
                                         nn.ReLU()
                                         )
             dem_size = 20
+        elif include_dem:
+            pass
+        else:
+            dem_size = 0
+
 
         if freeze_encoders:
             for param in self.parameters():
                 param.requires_grad = False
 
+        self.include_dem = include_dem
         self.include_demfc = include_demfc
         self.out_size = 3 * input_size + dem_size + 2
         self.padaware = pat_padaware
@@ -202,14 +208,19 @@ class PatientPoolEncoder(nn.Module):
             patient_timesteps = torch.cat([p_max, p_avg, p_sum], -1)  # N, L, C'
             patient.append(patient_timesteps)
 
-        if self.include_demfc:
-            dem = self.dem_fc(dem)
-        dem = dem.unsqueeze(1).expand(N, L, -1)  # N, L, C
+        patient_embedding = patient
+        if self.include_dem:
+            if self.include_demfc:
+                dem = self.dem_fc(dem)
+            dem = dem.unsqueeze(1).expand(N, L, -1)  # N, L, C
+            patient_embedding.append(dem)
 
         timestep = torch.arange(L, dtype=torch.float).to(dem.device).unsqueeze(1).unsqueeze(0).expand(N, -1, -1)  # N, L, C
         time_input = [torch.log(timestep + 1), torch.exp(timestep/1000) - 1]
 
-        patient_timesteps = torch.cat(patient + [dem] + time_input, 2)  # N, L, C'
+        patient_embedding += time_input
+
+        patient_timesteps = torch.cat(patient_embedding, 2)  # N, L, C'
 
         return patient_timesteps, {'time_inds': time_inds,
                                    'activations': activations}

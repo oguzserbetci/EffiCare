@@ -131,6 +131,7 @@ class LinearMaxMeanSumPool(nn.Module):
         self.linear = nn.Linear(input_size, hidden_size)
         self.d = hidden_size
         self.out_size = hidden_size * 3
+        # self.out_size = hidden_size * 3
 
         self.padaware = padaware
 
@@ -153,6 +154,9 @@ class LinearMaxMeanSumPool(nn.Module):
             o_avg = F.avg_pool1d(out, out.size(-1)).squeeze(-1)
         o_sum = norm_sum_pool(out).squeeze(-1)
         outs = [o_max, o_avg, o_sum]
+
+        # event_counts = (input[:, :, :100].detach() != 0).all(2).sum(1, keepdim=True).float() / 300  # T
+        # outs.append(event_counts)
 
         out = torch.cat(outs, 1)  # T, C
         return out, max_ind

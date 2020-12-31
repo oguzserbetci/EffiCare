@@ -172,7 +172,6 @@ def train(model: torch.nn.Module, device,
                 tboardwriter.add_scalar(f'train/{metric_name}', value, trainer.state.epoch)
             logs[f'train/{metric_name}'] = value
         wandb.log(logs, step=trainer.state.epoch)
-        wandb.run.summary.update()
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_validation_results(engine):
@@ -202,7 +201,6 @@ def train(model: torch.nn.Module, device,
                 tboardwriter.add_scalar(f'val/{metric_name}', value, trainer.state.epoch)
             logs[f'val/{metric_name}'] = value
         wandb.log(logs, step=trainer.state.epoch)
-        wandb.run.summary.update()
 
     @trainer.on(Events.STARTED)
     def init_trainer(engine):
@@ -244,7 +242,7 @@ def train(model: torch.nn.Module, device,
                         }
 
     def load_latest_checkpoint(glob_str, wandb_id=wandb.run.id):
-        model_paths = glob(f'wandb/*-{wandb_id}/{glob_str}')
+        model_paths = glob(f'wandb/*-{wandb_id}/**/{glob_str}')
         latest_model_path = sorted(model_paths)[-1]
         logging.info(f'LOAD LATEST CHECKPOINT AT {latest_model_path}')
 
@@ -339,7 +337,8 @@ def run(n_epochs, name, data_path, dev, **params):
                                                collate_fn=partial(utils.pad_batch,
                                                                   tables=tables,
                                                                   labels=labels,
-                                                                  limit=params['step_limit']),
+                                                                  limit=params['step_limit'],
+                                                                  event_limit=300),
                                                shuffle=True,
                                                num_workers=params['num_workers'] if not dev else 0,
                                                pin_memory=True,
@@ -371,9 +370,6 @@ def run(n_epochs, name, data_path, dev, **params):
     metrics = train(model, device, train_loader, val_loader,
                     tables, labels, n_epochs, tboardwriter=tboardwriter,
                     **params)
-
-    # SAVE RESULTS
-    wandb.run.summary.update()
 
     tboardwriter.add_hparams({k: v for k, v in params.items() if k not in ['tasks', 'input_tables', 'prediction_steps']},
                              {f'best/{metric_name}': metric for metric_name, metric in metrics.items()

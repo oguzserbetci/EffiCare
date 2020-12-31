@@ -39,7 +39,7 @@ def parse_arguments():
                         help='max number of epochs to train')
     parser.add_argument('--lr', default=1e-3, type=float)
     parser.add_argument('--weight_decay', default=0, type=float)
-    parser.add_argument('--batch_update', default=16, type=int)
+    parser.add_argument('--batch_update', default=32, type=int)
     parser.add_argument('--batch_size', default=1, type=int)
     parser.add_argument('--patience', default=8, type=int)
     parser.add_argument('--tasks', nargs='+', default=['ihm', 'decomp', 'los_reg', 'los_cl', 'phen'],
@@ -88,6 +88,8 @@ def parse_arguments():
     parser.add_argument('--include_time', default=True,
                         type=eval, choices=[True, False])
     parser.add_argument('--include_demfc', default=True, action='store_true')
+    parser.add_argument('--include_dem', default=True,
+                        type=eval, choices=[True, False])
 
     # Regularization
     parser.add_argument('--step_dropout', default=.1, type=float)
@@ -118,7 +120,8 @@ if args.config or args.resume or args.test:
 wandb.init(
     name=args.name if not args.dev else args.name + '_dev',
     id=args.resume or args.test,
-    project="thesis",
+    project="icu_xai_dl",
+    entity="ml_first_medical_prediction",
     notes=f'commit:{commit_hash}',
     resume=args.resume,
     config=config)
